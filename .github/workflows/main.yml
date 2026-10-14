@@ -1,4 +1,4 @@
-name: Manar Daily
+name: Manar Daily Android APK
 
 on:
   push:
@@ -6,9 +6,13 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -16,7 +20,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
+          cache: 'npm'
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -24,28 +29,64 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Build with Cordova/Capacitor Alternative
+      - name: Check App Files
+        run: |
+          if [ ! -f index.html ]; then
+            echo "ERROR: index.html is missing from the repository root."
+            echo "Upload your actual app code as index.html."
+            exit 1
+          fi
+
+          echo "App HTML file found successfully."
+
+      - name: Prepare Web Directory
         run: |
           mkdir -p www
-          if [ -f index.html ]; then
-            cp index.html www/index.html
-          fi
-          
-          npm install -g @capacitor/cli
-          npm init -y
-          npm install @capacitor/core @capacitor/android
-          npx cap init "Manar Daily" "com.manardaily.app" --web-dir www
-          npx cap add android
-          npx cap sync android
+          cp index.html www/index.html
 
-      - name: Compile APK
+      - name: Initialize Node Project
+        run: npm init -y
+
+      - name: Install Capacitor 7
+        run: |
+          npm install @capacitor/core@7 @capacitor/android@7
+          npm install --save-dev @capacitor/cli@7
+
+      - name: Create Capacitor Config
+        run: |
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.manardaily.app",
+            "appName": "Manar Daily",
+            "webDir": "www"
+          }
+          EOF
+
+      - name: Add Android Platform
+        run: npx cap add android
+
+      - name: Sync Android
+        run: npx cap sync android
+
+      - name: Build APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Verify APK
+        run: |
+          if [ ! -f android/app/build/outputs/apk/debug/app-debug.apk ]; then
+            echo "ERROR: APK file was not generated."
+            exit 1
+          fi
+
+          echo "APK built successfully."
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Manar-Daily-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
