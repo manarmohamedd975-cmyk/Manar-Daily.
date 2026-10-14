@@ -1,0 +1,56 @@
+name: Manar Daily
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Prepare Web Directory
+        run: |
+          mkdir -p www
+          if [ -f index.html ]; then
+            cp index.html www/index.html
+          elif [ -f www/index.html ]; then
+            echo "www/index.html exists"
+          else
+            echo "<!DOCTYPE html><html><head><title>Manar Daily</title></head><body><h1>Manar Daily App</h1></body></html>" > www/index.html
+          fi
+
+      - name: Install Capacitor & Build Android
+        run: |
+          npm init -y
+          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
+          npx cap init "Manar Daily" "com.manardaily.app" --web-dir www
+          npx cap add android
+          npx cap sync android
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Manar-Daily-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
