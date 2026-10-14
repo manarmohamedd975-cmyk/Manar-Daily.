@@ -21,7 +21,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -36,7 +35,6 @@ jobs:
             echo "Upload your actual app code as index.html."
             exit 1
           fi
-
           echo "App HTML file found successfully."
 
       - name: Prepare Web Directory
@@ -80,7 +78,6 @@ jobs:
             echo "ERROR: APK file was not generated."
             exit 1
           fi
-
           echo "APK built successfully."
 
       - name: Upload APK
