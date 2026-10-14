@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -24,26 +24,21 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Prepare Web Directory
+      - name: Build with Cordova/Capacitor Alternative
         run: |
           mkdir -p www
           if [ -f index.html ]; then
             cp index.html www/index.html
-          elif [ -f www/index.html ]; then
-            echo "www/index.html exists"
-          else
-            echo "<!DOCTYPE html><html><head><title>Manar Daily</title></head><body><h1>Manar Daily App</h1></body></html>" > www/index.html
           fi
-
-      - name: Install Capacitor & Build Android
-        run: |
+          
+          npm install -g @capacitor/cli
           npm init -y
-          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
+          npm install @capacitor/core @capacitor/android
           npx cap init "Manar Daily" "com.manardaily.app" --web-dir www
           npx cap add android
           npx cap sync android
 
-      - name: Build APK
+      - name: Compile APK
         run: |
           cd android
           chmod +x gradlew
